@@ -21,9 +21,10 @@ public class Main {
                     var filePath = Path.of(".", "public", request.getPath());
                     var mimeType = Files.probeContentType(filePath);
                     System.out.println("classic.html: " + request.getPath());
-                    if (request.getQueryParams() != null) {
-                        request.getQueryParams().forEach((key, value) -> System.out.println(key + ":" + value));
+                    if (request.getPostParams() != null) {
+                        request.getPostParams().forEach((key, value) -> System.out.println(key + ":" + value));
                     }
+                    //System.out.println(request.getQueryParam("getpar1"));
 
                     final var template = Files.readString(filePath);
                     final var content = template.replace("{time}",
@@ -41,8 +42,8 @@ public class Main {
                     final var filePath = Path.of(".", "public", request.getPath());
                     final var mimeType = Files.probeContentType(filePath);
                     System.out.println("events.html: " + request.getPath());
-                    if (request.getQueryParams() != null) {
-                        request.getQueryParams().forEach((key, value) -> System.out.println(key + ":" + value));
+                    if (request.getPostParams() != null) {
+                        request.getPostParams().forEach((key, value) -> System.out.println(key + ":" + value));
                     }
                     final var content = Files.readAllBytes(filePath);
                     outWrite(mimeType, content, out);

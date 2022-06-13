@@ -5,6 +5,7 @@ import org.apache.http.client.utils.URLEncodedUtils;
 
 import java.io.*;
 import java.net.URISyntaxException;
+
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -16,15 +17,17 @@ public class Request {
     private final List<String> headers;
     private final InputStream in;
     private final Map<String, List<String>> queryParams;
+    private final Map<String, List<String>> postParams;
     private final static String GET = "GET";
     private final static String POST = "POST";
 
     private Request(String method, String path,  List<String> headers,
-                    Map<String, List<String>> queryParams, InputStream in) {
+                    Map<String, List<String>> queryParams, Map<String, List<String>> postParams, InputStream in) {
         this.method = method;
         this.path = path;
         this.headers = headers;
         this.queryParams = queryParams;
+        this.postParams = postParams;
         this.in = in;
     }
 
@@ -70,7 +73,7 @@ public class Request {
             String[] value = pathWithQuery.split("\\?");
             path = value[0];
             String queryLine = value[1];
-            query = parseUrlToQuery(queryLine);
+            query = parseToQuery(queryLine);
         } else {
             path = pathWithQuery;
             query = null;
@@ -94,6 +97,8 @@ public class Request {
         final var headers = Arrays.asList(new String(headersBytes).split("\r\n"));
         System.out.println(headers);
 
+        Map<String, List<String>> post = null;
+
         // для GET тела нет
         if (!method.equals(GET)) {
             in.skip(headersDelimiter.length);
@@ -105,12 +110,16 @@ public class Request {
 
                 final var body = new String(bodyBytes);
                 System.out.println(body);
+
+                if (body.contains("=")) {
+                    post = parseToQuery(body);
+                }
             }
         }
-        return new Request(method, path, headers, query, in);
+        return new Request(method, path, headers, query, post, in);
     }
 
-    private static Map<String, List<String>> parseUrlToQuery(String queryLine) {
+    private static Map<String, List<String>> parseToQuery(String queryLine) {
         HashMap<String, List<String>> map = new HashMap<>();
         var nameValuePairs = URLEncodedUtils.parse(queryLine, Charset.defaultCharset(),'&');
         for (NameValuePair nameValuePair : nameValuePairs) {
@@ -130,6 +139,20 @@ public class Request {
 
     public Map<String, List<String>> getQueryParams() {
         return queryParams;
+    }
+
+    public List<String> getPostParam(String name) {
+        if (postParams == null) {
+            getPostParams();
+        }
+        return postParams.get(name);
+    }
+
+    public Map<String, List<String>> getPostParams() {
+        if (postParams != null) {
+            return postParams;
+        }
+        return null;
     }
 
     private static Optional<String> extractHeader(List<String> headers, String header) {
