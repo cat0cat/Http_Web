@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Main {
-    public static final int PORT = 9999;
+    public static final int PORT = 5555;
     public static final int THREADS = 64;
 
     public static void main(String[] args) {
@@ -20,10 +20,16 @@ public class Main {
                 try {
                     var filePath = Path.of(".", "public", request.getPath());
                     var mimeType = Files.probeContentType(filePath);
+                    System.out.println("classic.html: " + request.getPath());
+                    if (request.getPostParams() != null) {
+                        request.getPostParams().forEach((key, value) -> System.out.println(key + ":" + value));
+                    }
+                    //System.out.println(request.getQueryParam("getpar1"));
+
                     final var template = Files.readString(filePath);
                     final var content = template.replace("{time}",
-                                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
-                            .getBytes();
+                            LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
+                    .getBytes();
                     outWrite(mimeType, content, out);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -35,7 +41,10 @@ public class Main {
                 try {
                     final var filePath = Path.of(".", "public", request.getPath());
                     final var mimeType = Files.probeContentType(filePath);
-
+                    System.out.println("events.html: " + request.getPath());
+                    if (request.getPostParams() != null) {
+                        request.getPostParams().forEach((key, value) -> System.out.println(key + ":" + value));
+                    }
                     final var content = Files.readAllBytes(filePath);
                     outWrite(mimeType, content, out);
                 } catch (IOException e) {
