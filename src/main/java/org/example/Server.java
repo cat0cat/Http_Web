@@ -3,6 +3,7 @@ package org.example;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -13,21 +14,6 @@ public class Server {
 
     ExecutorService executorService;
     private final Map<String, Map<String, Handler>> handlers;
-    private final Handler notFoundHandler = new Handler() {
-        public void handle(Request request, BufferedOutputStream out) {
-            try {
-                out.write((
-                        "HTTP/1.1 404 Not Found\r\n" +
-                                "Content-Length: 0\r\n" +
-                                "Connection: close\r\n" +
-                                "\r\n"
-                ).getBytes());
-                out.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    };
 
     public Server(int threads) {
         this.executorService = Executors.newFixedThreadPool(threads);
@@ -50,7 +36,6 @@ public class Server {
             handlers.put(method, new ConcurrentHashMap<>());
         }
         handlers.get(method).put(path, handler);
-
     }
 
     public void connect(Socket socket) {
@@ -58,19 +43,31 @@ public class Server {
              final var in = socket.getInputStream();
              final var out = new BufferedOutputStream(socket.getOutputStream());) {
 
-            var request = Request.fromInputStream(in);
+            var request = Request.getRequest(in,out);
             var pathHandlerMap = handlers.get(request.getMethod());
             if (pathHandlerMap == null) {
-                notFoundHandler.handle(request, out);
+                out.write((
+                        "HTTP/1.1 404 Not Found\r\n" +
+                                "Content-Length: 0\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n"
+                ).getBytes());
+                out.flush();
                 return;
             }
             var handler = pathHandlerMap.get(request.getPath());
             if (handler == null) {
-                notFoundHandler.handle(request, out);
+                out.write((
+                        "HTTP/1.1 404 Not Found\r\n" +
+                                "Content-Length: 0\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n"
+                ).getBytes());
+                out.flush();
                 return;
             }
             handler.handle(request, out);
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             e.printStackTrace();
         }
     }
